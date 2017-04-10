@@ -5,10 +5,19 @@ const Schema = mongoose.Schema;
 // ----------------------
 // USERS
 // ----------------------
-const usersSchema = new Schema({
+const UsersSchema = new Schema({
   // required for authentication: DO NOT TOUCH Or You May Get Punched
-  email:     { type: String, required: true },
-  password:  { type: String, required: true },
+  email:     { 
+	type: String, 
+	required: true,
+	match: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,10}$/i
+  },
+  password:  { 	
+	 type: String, 
+	 required: true,
+	 match: /(?=.*[a-zA-Z]+)(?=.*[0-9]+)(?=.*[!*&^$#@()+]+).*/,
+	 minlength: 12	
+  },
   // x..x..x..x..x..x..x..x..x..x..x..x..x..x..x..x..x..x..x..x..x..x
   
    // example of optional fields
@@ -36,13 +45,13 @@ function handlePasswordCompare(inputPW, user){
 	}
 }
 
-usersSchema.pre('save', hashNewPassword )
+UsersSchema.pre('save', hashNewPassword )
 
-usersSchema.methods.checkPasswordToHash = function(inputPW, callback){
+UsersSchema.methods.checkPasswordToHash = function(inputPW, callback){
 	let userRecord = this
 	return new Promise( handlePasswordCompare(inputPW, userRecord) )
 }
 
 module.exports = {
-  User: mongoose.model('User', usersSchema)
+  User: mongoose.model('User', UsersSchema)
 }

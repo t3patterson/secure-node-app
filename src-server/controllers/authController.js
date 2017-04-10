@@ -1,6 +1,12 @@
 const passport = require('passport')
 
-function authController(UserMod){
+function delayResponse(cb){
+	setTimeout(()=>{
+		cb()
+	}, 1000)
+}
+
+function authController(UserMod, LoginMod){
 
 	function registerUser(req, res){
      // passport appends json-data to request.body
@@ -14,7 +20,7 @@ function authController(UserMod){
          return res.status(401).send(`oops, record for <${req.body.email}> already exists`)
        }
 
-       newUser.save(function(err, record){
+       newUser.save((err, record)=>{
 			
          if(err) {
 				console.log(err)
@@ -37,16 +43,29 @@ function authController(UserMod){
    }
 
 	function authenticateUser(req, res, next){
-	  console.log(req.body)
-	  passport.authenticate('local', _handleAuth(req,res,next))(req,res,next)  
+	  LoginMod.canAuthenticate(`${req.body.email}-${req.ip}`).then((hasPermission)=>{
+		  console.log('resolved promise')
+		  console.log(hasPermission);
+		  delayResponse(()=>{
+   	  	passport.authenticate('local', _handleAuth(req,res,next))(req,res,next)  
+   	  })		
+	  })
+	  
    }
 	
 	function _handleAuth(req,res,next){
-		console.log('handling auth.....')
 		return (err, validPw, info)=>{
         // failure callback triggered in passport-local strategy
 		  if (err || !validPw) {
-			 return res.status(403).json(info)
+			 return LoginMod.noteFailedLoginAttempt(`${req.body.email}-${req.ip}`)
+				.then((loginKeyData)=>{
+					info.loginStatus = loginKeyData
+					console.log("FAILED LOGIN")
+					console.log(info)
+					return res.status(403).json(info)
+				}).catch((err)=>{
+					console.error(err)
+				})
 		  }
 
 		  let userRecord = info
@@ -54,9 +73,9 @@ function authController(UserMod){
 			  if (err) { return res.status(500).send(err) }
 			  userRecord.password = undefined
 			  delete userRecord.password
+   		  LoginMod.noteSuccessfulLoginAttempt(`${req.body.email}-${req.ip}`)
 			  return res.json(userRecord).status(200)
 		  })
-		  next()
 		}
 	}
 	

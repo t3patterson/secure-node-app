@@ -129,6 +129,23 @@ LoginSchema.static("noteSuccessfulLoginAttempt", function(key){
 - set time to live (ttl) on MongoStore to limit length of session
 
 - don't recycle sessions
+```js
+function _regenerateSession(req,res,next){
+
+	return new Promise((resolve, reject)=>{
+	  let userRecordJSON = req.user.toObject()
+	  delete userRecordJSON.password
+	  req.session.regenerate(function(err){
+		  req.session.passport = userRecordJSON;
+		  req.session.save(function(err){
+				console.log('pw regenerated?', err)
+				if(err) reject(err)
+				resolve(userRecordJSON);
+		  });
+	 });		
+	})
+}
+```
 
 - 
 

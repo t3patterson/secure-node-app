@@ -9,24 +9,16 @@ function delayResponse(cb){
 function authController(UserMod, LoginMod){
    
 	function _regenerateSession(req,res,next){
-		console.log('p.........!', req)
 
 		return new Promise((resolve, reject)=>{
-		  console.log('req.session', req.session)
-		  console.log('req.user', req.user)
-		  let userRecordJSON = req.user.toObject()
-		  console.log('ummm', userRecordJSON)
-		  delete userRecordJSON.password
+		  let userPassport = Object.assign({},req.session.passport)
    	  req.session.regenerate(function(err){
-	        req.session.passport = userRecordJSON;
+	        req.session.passport = userPassport;
 	        req.session.save(function(err){
-					console.log('pw regenerated?', err)
-
 					if(err) reject(err)
-					console.log('pw regenerated!!')
-	            resolve(userRecordJSON);
+	            resolve(true);
 	        });
-	    });		
+	     });
 		})
 	}
 	
@@ -52,8 +44,9 @@ function authController(UserMod, LoginMod){
    		  LoginMod
 				.noteSuccessfulLoginAttempt(`${userRecord.email}-${req.ip}`)
 				.then( (d)=>{ return _regenerateSession(req,res,next) } )
-				.then( (userRecordJSON)=>{
-					console.log(userRecordJSON)
+				.then(()=>{
+				   let userRecordJSON = req.user.toObject()
+				   delete userRecordJSON.password
 					return res.json(userRecordJSON).status(200) 
 				})
 				.catch((err)=> { console.error(err); res.status(500).send(err)} )

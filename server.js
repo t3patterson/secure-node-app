@@ -18,6 +18,7 @@ const cookieParser = require('cookie-parser')
 
 const configurePassport_Local = require('./src-server/config/passportConfig-local.js')
 
+const configSession = require('./src-server/config/sessionConfig.js')
 const connectToDB = require('./src-server/db/db-connect.js') //connect to db
 
 const indexRouter = require('./src-server/routes/indexRouter.js')
@@ -28,20 +29,25 @@ const authRouter = require('./src-server/routes/authRouter.js')
 // =========
 // RUN APP
 // =========
+// connect to DB
+const dbLocation = connectToDB(PROJECT_NAME)
 const app = express()
 
+
+
+
+// =========
+// Middleware
+// =========
 
 //configure bodyParser middleware
 app.use(bodyParser.urlencoded({ extended: false }))
 app.use(bodyParser.json())
 
-//configure sessions w/ passport
-app.use(cookieParser())
-app.use(session({
-	secret: require('./secrets.js').sessionSecret,
-	resave: true,
-	saveUninitialized: true
-}))
+app.use( cookieParser() )
+app.use( configSession({dbUrl: dbLocation}) )
+
+// init passport and configure sessions w/ passport
 app.use(passport.initialize())
 app.use(passport.session())
 configurePassport_Local()
@@ -74,8 +80,6 @@ app.use('/auth', authRouter)
 //---------------------
 //EXECUTION SCRIPTS
 //---------------------
-//Connect to DB
-connectToDB(PROJECT_NAME)
 
 //Tell Server to listen @ port-location
 app.listen(PORT, function() {

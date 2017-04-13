@@ -26,17 +26,25 @@ const LoginSchema = new Schema({
 })
 
 LoginSchema.static('canAuthenticate', function(key){
-	console.log('CAN auth????');
+	let timeoutElapsed = (loginRec, minutes = 1)=>{
+		let nowTime = new Date().now()
+		let lockoutExpire = loginRec.timeout.getTime() + 1000 * 60 * minutes
+		return nowTime > lockoutExpire
+	}
+				
 	return new Promise((resolve, reject)=>{
 		this.findOne({identityKey: key}).exec().then((loginRecord)=>{
-			console.log('user login record found for __', key ,'__');
+		
 			if(!loginRecord || loginRecord.failedAttempts < 10){
-				console.log( 'can login:', '--', loginRecord )
-				resolve(true)
-			} else {
-				console.log( 'cannot login. too much fail:', '--', loginRecord )
-				resolve(false)
+				return resolve(true)
+			} 
+
+			if( timeoutElapsed(loginRecord , 2) ){	
+				this.find({identityKey: key}).remove()
+				return resolve(true)
 			}
+				
+			resolve(false)
 		}).catch((err)=>{
 			console.error(err);
 		})
@@ -48,9 +56,7 @@ LoginSchema.static('noteFailedLoginAttempt', function(key){
 		let query = {identityKey: key}
 		let updateParams = {$inc: {failedAttempts: 1}, timeout: new Date()}
 		let options = {upsert: true, new: true}
-		console.log('updating???')
 		this.findOneAndUpdate( query, updateParams, options ).exec().then((resultRecord)=>{
-			console.log('KEY found', resultRecord)
 			if(resultRecord){
 				resolve(resultRecord)
 			} 				
@@ -61,15 +67,12 @@ LoginSchema.static('noteFailedLoginAttempt', function(key){
 })
 
 LoginSchema.static("noteSuccessfulLoginAttempt", function(key){
-	console.log('login is so successful!');
 	return new Promise((resolve, reject)=>{
 		this.find({identityKey: key}).remove().then((idKeyRecordToDelete)=>{
-			console.log('deleting key:', idKeyRecordToDelete)
 			resolve(idKeyRecordToDelete)
 		}).catch((err)=>{
 			console.error(err);
 		})
-		
 	})
 })
 

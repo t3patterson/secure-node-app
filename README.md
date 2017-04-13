@@ -1,5 +1,7 @@
 # Node App Security
 
+## Passwords
+-----
 ### 1) Password Storage
 **bcrypt** for hashing passwords. in `userModel.js`
 
@@ -61,8 +63,109 @@ function authenticateUser(req, res, next){
 ```
 
 ### 4) Tracking Failed Logins
+
+```js
+LoginSchema.static('canAuthenticate', function(key){
+	let timeoutElapsed = (loginRec, minutes = 1)=>{
+		let nowTime = new Date().now()
+		let lockoutExpire = loginRec.timeout.getTime() + 1000 * 60 * minutes
+		return nowTime > lockoutExpire
+	}
+				
+	return new Promise((resolve, reject)=>{
+		this.findOne({identityKey: key}).exec().then((loginRecord)=>{
+		
+			if(!loginRecord || loginRecord.failedAttempts < 10){
+				return resolve(true)
+			} 
+
+			if( timeoutElapsed(loginRecord , 2) ){	
+				this.find({identityKey: key}).remove()
+				return resolve(true)
+			}
+				
+			resolve(false)
+		}).catch((err)=>{
+			console.error(err);
+		})
+	})
+})
+
+LoginSchema.static('noteFailedLoginAttempt', function(key){
+	return new Promise((resolve, reject)=>{
+		let query = {identityKey: key}
+		let updateParams = {$inc: {failedAttempts: 1}, timeout: new Date()}
+		let options = {upsert: true, new: true}
+		this.findOneAndUpdate( query, updateParams, options ).exec().then((resultRecord)=>{
+			if(resultRecord){
+				resolve(resultRecord)
+			} 				
+		}).catch((err)=>{
+			console.error(err);
+		})
+	})
+})
+
+LoginSchema.static("noteSuccessfulLoginAttempt", function(key){
+	return new Promise((resolve, reject)=>{
+		this.find({identityKey: key}).remove().then((idKeyRecordToDelete)=>{
+			resolve(idKeyRecordToDelete)
+		}).catch((err)=>{
+			console.error(err);
+		})
+	})
+})
 ```
 
+
+## Sessions
+----
+- uses *connect-mongo* dependency
+
+### Security Measures
+- Hide the session management middleware
+  + set `name` property to '*id*' on express-session. This will change  the *set-cookie: connect.sid=...* in the headers to *set-cookie: id=...*
+
+- set time to live (ttl) on MongoStore to limit length of session
+
+- don't recycle sessions
+
+- 
+
+### Configuration
+
+in `./src-server/config/sessionConfig.js`
+```js
+const {sessionSecret} = require('../../secrets.js')
+const session =  require('express-session')
+const mongoStoreFactory =  require('connect-mongo')
+
+module.exports = function(configObj){
+	session.Session.prototype.login = function(user){
+		this.userInfo = user
+	}
+
+	const MongoStore = mongoStoreFactory(session)
+
+	return session({
+		store: new MongoStore({
+			url: configObj.dbUrl, 
+			ttl: (1 * 60 * 60) 
+		}),	
+		secret: require('../../secrets.js').sessionSecret,
+		resave: true,
+		saveUninitialized: true,
+		resave: false,
+		cookie: {
+			path: '/',
+			httpOnly: true,
+			secure: false
+		},
+		name: 'id'
+	})
+
+}
 ```
+
 
 	

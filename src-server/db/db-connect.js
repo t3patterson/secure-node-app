@@ -21,6 +21,8 @@ function connectToDB(projectName, cb){
  				if (typeof cb === 'function') cb()
 			})
 			.catch( (x) => {console.log(chalk.red(`db connection error: `, x)) })
+	
+		return dbLocation
 }
 
 module.exports = connectToDB

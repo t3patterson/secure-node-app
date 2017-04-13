@@ -19,17 +19,13 @@ function authController(UserMod, LoginMod){
        if(results !== null && results.length > 0 ) { 
          return res.status(401).send(`oops, record for <${req.body.email}> already exists`)
        }
-
        newUser.save((err, record)=>{
-			
          if(err) {
-				console.log(err)
 				return res.status(500).json(err)
 			}
-         let userCopy = newUser.toObject()
-         userCopy.password = undefined
-         delete userCopy.password
-         return res.json(userCopy).status(200)
+         let userRecordJSON = newUser.toObject()
+         delete userRecordJSON.password
+         return res.json(userRecordJSON).status(200)
        })
      })
    }
@@ -44,13 +40,10 @@ function authController(UserMod, LoginMod){
 
 	function authenticateUser(req, res, next){
 	  LoginMod.canAuthenticate(`${req.body.email}-${req.ip}`).then((hasPermission)=>{
-		  console.log('resolved promise')
-		  console.log(hasPermission);
 		  delayResponse(()=>{
    	  	passport.authenticate('local', _handleAuth(req,res,next))(req,res,next)  
    	  })		
 	  })
-	  
    }
 	
 	function _handleAuth(req,res,next){
@@ -60,8 +53,6 @@ function authController(UserMod, LoginMod){
 			 return LoginMod.noteFailedLoginAttempt(`${req.body.email}-${req.ip}`)
 				.then((loginKeyData)=>{
 					info.loginStatus = loginKeyData
-					console.log("FAILED LOGIN")
-					console.log(info)
 					return res.status(403).json(info)
 				}).catch((err)=>{
 					console.error(err)
@@ -71,10 +62,12 @@ function authController(UserMod, LoginMod){
 		  let userRecord = info
 		  req.login(info, (err)=>{
 			  if (err) { return res.status(500).send(err) }
-			  userRecord.password = undefined
-			  delete userRecord.password
-   		  LoginMod.noteSuccessfulLoginAttempt(`${req.body.email}-${req.ip}`)
-			  return res.json(userRecord).status(200)
+			  console.log('req.session', req.session)
+			  let userRecordJSON = userRecord
+			  delete userRecordJSON.password
+   		  LoginMod.noteSuccessfulLoginAttempt(`${userRecordJSON.email}-${req.ip}`)
+			  console.log('userREC', userRecordJSON)
+			  return res.json(userRecordJSON).status(200)
 		  })
 		}
 	}

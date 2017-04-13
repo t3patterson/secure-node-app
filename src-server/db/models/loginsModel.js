@@ -68,10 +68,12 @@ LoginSchema.static('noteFailedLoginAttempt', function(key){
 
 LoginSchema.static("noteSuccessfulLoginAttempt", function(key){
 	return new Promise((resolve, reject)=>{
+		console.log('watt???')
 		this.find({identityKey: key}).remove().then((idKeyRecordToDelete)=>{
+			console.log('successful removal!!')
 			resolve(idKeyRecordToDelete)
 		}).catch((err)=>{
-			console.error(err);
+			console.log(err);
 		})
 	})
 })

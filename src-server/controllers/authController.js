@@ -9,7 +9,6 @@ function delayResponse(cb){
 function authController(UserMod, LoginMod){
    
 	function _regenerateSession(req,res,next){
-
 		return new Promise((resolve, reject)=>{
 		  let userPassport = Object.assign({},req.session.passport)
    	  req.session.regenerate(function(err){
@@ -43,7 +42,7 @@ function authController(UserMod, LoginMod){
 			  }
    		  LoginMod
 				.noteSuccessfulLoginAttempt(`${userRecord.email}-${req.ip}`)
-				.then( (d)=>{ return _regenerateSession(req,res,next) } )
+				// .then(()=>{ return _regenerateSession(req,res,next) } )
 				.then(()=>{
 				   let userRecordJSON = req.user.toObject()
 				   delete userRecordJSON.password
@@ -85,9 +84,9 @@ function authController(UserMod, LoginMod){
 
 	function getCurrentUser (req, res) {
      if (req.user) {
-			return res.json({user: req.user}).status(200);
+			return res.json(req.user).status(200);
 	  } else {
-         return res.json({user: null}).status(200)
+         return res.json({}).status(200)
 	  }
    }
 

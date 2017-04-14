@@ -21,7 +21,7 @@ module.exports = function(configObj){
 		cookie: {
 			path: '/',
 			httpOnly: true,
-			secure: false
+			secure: true
 		},
 		name: 'id'
 	})

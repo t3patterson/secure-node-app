@@ -25,6 +25,7 @@ const indexRouter = require('./src-server/routes/indexRouter.js')
 const apiRouter = require('./src-server/routes/apiRouter.js')
 const authRouter = require('./src-server/routes/authRouter.js')
 
+const expressValidator = require('express-validator')
 
 // =========
 // RUN APP
@@ -47,6 +48,7 @@ app.use(bodyParser.json())
 app.use( cookieParser() )
 app.use( configSession({dbUrl: dbLocation}) )
 
+app.use( expressValidator() )
 // init passport and configure sessions w/ passport
 app.use(passport.initialize())
 app.use(passport.session())

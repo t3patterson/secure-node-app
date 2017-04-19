@@ -29,12 +29,13 @@ Key question: What path has the data traveled?
 
 
 ### Remedy 1 - Data Validation Middleware
-**(a)** in `server.js`, import  **[express-validator](https://github.com/ctavan/express-validator)** and use as middleware
+**(a) apply express-validator middleware** 
+in `server.js`, import  [express-validator](https://github.com/ctavan/express-validator) and use as middleware
 ```js
 app.use( expressValidator() )
 ```
 
-**(b)**
+**(b) create a schema for validating the incoming json-body for a route**
 in `src-server/config/` create `validationSchema.js`
 (example w/ the registration schema)
 ```js
@@ -64,8 +65,9 @@ module.exports = {
 }
 ```
 
-**(c)**
-in `src-server/middleware/` create `validateValues.js`
+**(c) create validation-handler logic**
+in `src-server/middleware/` create `validateValues.js`. NOTE: this uses a `switch(...)` statement to apply different schemas
+
 ```js
 const {registrationSchema} = require('../config/validationSchema.js')
 
@@ -81,7 +83,6 @@ function validateData(validationRequirement){
 		const errors = req.validationErrors();
 		if(errors){
 			return  res.status(400).json("To many errors, in your validation, bits")
-
 		}
 		next()
 	}
@@ -90,7 +91,13 @@ function validateData(validationRequirement){
 module.exports = validateData
 ```
 
+**(d) apply validation middleware to appropriate route**
+in `authRouter.js`
 
+```js
+authRouter
+  .post('/register', validateData("NEW_USER"), registerUser)
+```
 
 ### Remedy 2 - Database Validation Schema
 
